@@ -1,0 +1,5 @@
+*.pyc
+*.wav
+*.pth
+*.json
+*.npz
