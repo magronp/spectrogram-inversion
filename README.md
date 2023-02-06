@@ -1,4 +1,4 @@
-#  Phase recovery with Bregman divergences for audio source separation
+#  Spectrogram inversion algorithms for audio source separation
 
 This repository contains the code for reproducing the experiments in our paper entitled [Phase recovery with the Bregman divergence for audio source separation](https://arxiv.org/abs/2010.10255), published at the IEEE International Conference on Audio, Speech and Signal Processing (ICASSP) 2021.
 
@@ -48,4 +48,3 @@ It will also reproduce Fig. 1 from the paper.
 
 </p>
 </details>
-# spec_inv

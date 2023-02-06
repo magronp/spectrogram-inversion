@@ -5,8 +5,8 @@ import os
 import numpy as np
 import librosa
 from helpers.stft import my_stft, my_istft
+from librosa import stft, istft
 from helpers.data_io import record_src
-np.random.seed(0)  # Set random seed for reproducibility
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
@@ -71,13 +71,13 @@ def prep_dataset(params):
 
             # Adjust the noise at target input SNR
             noise_adj = adjust_noise_at_isnr(clean, noise, input_snr=iSNR)
-            src_ref = np.concatenate((clean[:, np.newaxis], noise_adj[:, np.newaxis]), axis=1)
+            src_ref = np.concatenate((clean[np.newaxis, :], noise_adj[np.newaxis, :]), axis=0)
 
             # Take the STFT and iSTFT to ensure the length is fixed
-            src_ref_stft = my_stft(src_ref, n_fft=params['n_fft'], hop_length=params['hop_length'],
-                                   win_length=params['win_length'], win_type=params['win_type'])
-            src_ref = my_istft(src_ref_stft, hop_length=params['hop_length'], win_length=params['win_length'],
-                         win_type=params['win_type'])
+            src_ref_stft = stft(src_ref, n_fft=params['n_fft'], hop_length=params['hop_length'],
+                                   win_length=params['win_length'], window=params['win_type'])
+            src_ref = istft(src_ref_stft, hop_length=params['hop_length'], win_length=params['win_length'],
+                         window=params['win_type'])
 
             # Create the folder to record the wav (if necessary)
             rec_dir = 'data/SNR_' + str(iSNR) + '/' + str(n)
@@ -99,6 +99,9 @@ def prep_dataset(params):
 
 
 if __name__ == '__main__':
+
+    # Set random seed for reproducibility
+    np.random.seed(1234)
 
     # Parameters
     params = {'sample_rate': 16000,

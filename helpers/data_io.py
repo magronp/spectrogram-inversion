@@ -3,6 +3,7 @@
 
 import numpy as np
 import librosa
+import soundfile
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
@@ -23,10 +24,10 @@ def load_src(audio_path, sample_rate):
     noise = librosa.core.load(audio_path + 'noise.wav', sr=sample_rate)[0]
 
     # Create array with both sources and compute the mix
-    src_ref = np.concatenate((clean[:, np.newaxis], noise[:, np.newaxis]), axis=1)
+    src_ref = np.concatenate((clean[np.newaxis, :], noise[np.newaxis, :]), axis=0)
 
     # Create the mixture
-    mix = np.sum(src_ref, axis=1)[:, np.newaxis]
+    mix = np.sum(src_ref, axis=0)
 
     return src_ref, mix
 
@@ -41,14 +42,13 @@ def record_src(audio_path, src, sample_rate, rec_mix=False):
     """
 
     # Record the speech and noise sources
-    librosa.output.write_wav(audio_path + 'clean.wav', np.asfortranarray(src[:, 0]), sr=sample_rate)
-    librosa.output.write_wav(audio_path + 'noise.wav', np.asfortranarray(src[:, 1]), sr=sample_rate)
+    soundfile.write(audio_path + 'clean.wav', src[0, :], sample_rate)
+    soundfile.write(audio_path + 'noise.wav', src[1, :], sample_rate)
 
     # If original sources, also record the mixture
     if rec_mix:
-        librosa.output.write_wav(audio_path + 'mix.wav', np.asfortranarray(np.sum(src, axis=1)), sr=sample_rate)
+        soundfile.write(audio_path + 'mix.wav', np.sum(src, axis=0), sample_rate)
 
     return
-
 
 # EOF
