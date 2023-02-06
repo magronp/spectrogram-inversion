@@ -3,10 +3,12 @@
 
 import numpy as np
 from helpers.data_io import load_src
-from helpers.stft import my_stft
+from librosa import stft, istft
+from helpers.algos import spectrogram_inversion, amplitude_mask
 from open_unmx.estim_spectro import estim_spectro_from_mix
 from helpers.plotter import plot_val_results
-np.random.seed(0)  # Set random seed for reproducibility
+from matplotlib import pyplot as plt
+
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
@@ -31,50 +33,61 @@ def validation(params, val_sdr_path='outputs/val_sdr.npz'):
 
     # Some parameters
     n_isnr = len(params['input_SNR_list'])
-    n_grad, n_beta = params['grad_step_range'].shape[0], params['beta_range'].shape[0]
+    n_algos, n_cons = len(params['algos_list']), params['cons_weight_list'].shape[0]
 
     # Initialize the SDR array
-    sdr_val = np.zeros((params['max_iter'] + 1, n_grad, n_beta, 2, 2, n_isnr, params['n_mix']))
+    sdr_val = np.zeros((params['max_iter'] + 1, n_isnr, params['n_mix'], n_algos, n_cons))
+    sdr_misi = np.zeros((params['max_iter'] + 1, n_isnr, params['n_mix']))
+    error_val = np.zeros((params['max_iter'], n_isnr, params['n_mix'], n_algos, n_cons))
+    error_misi= np.zeros((params['max_iter'], n_isnr, params['n_mix']))
 
     # Loop over iSNRs, mixtures and parameters
     for index_isnr, isnr in enumerate(params['input_SNR_list']):
         for index_mix in range(params['n_mix']):
 
-            # Load time-domain signals and get the mixture's STFT
-            audio_path = 'data/SNR_' + str(isnr) + '/' + str(index_mix) + '/'
+            # Load data (start from mixture 50 since the first 50 are for validation)
+            audio_path = 'data/SNR_' + str(isnr) + '/' + str(index_mix + params['n_mix']) + '/'
             src_ref, mix = load_src(audio_path, params['sample_rate'])
-            mix_stft = my_stft(mix, n_fft=params['n_fft'], hop_length=params['hop_length'],
-                               win_length=params['win_length'], win_type=params['win_type'])[:, :, 0]
+            mix_stft = stft(mix, n_fft=params['n_fft'], hop_length=params['hop_length'],
+                               win_length=params['win_length'], window=params['win_type'])
 
             # Estimate the magnitude spectrograms
-            spectro_mag = estim_spectro_from_mix(mix)
+            spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
 
-            # Gradient descent
-            for index_b, b in enumerate(params['beta_range']):
-                for index_g, g in enumerate(params['grad_step_range']):
+            # MISI
+            _, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo='MISI',
+                                                  max_iter=params['max_iter'], reference_sources=src_ref,
+                                                  hop_length=params['hop_length'], window=params['win_type'],
+                                                  compute_error=True)
+            sdr_misi[:, index_isnr, index_mix] = sdr
+            error_misi[:, index_isnr, index_mix] = error
+
+            # Validation for all algos depending on a consistency weight
+            for ia, algo in enumerate(params['algos_list']):
+                for ic, consistency_weight in enumerate(params['cons_weight_list']):
+
                     print('iSNR ' + str(index_isnr + 1) + ' / ' + str(n_isnr) +
                           ' -- Mix ' + str(index_mix + 1) + ' / ' + str(params['n_mix']) +
-                          ' -- Beta ' + str(index_b + 1) + ' / ' + str(n_beta) +
-                          ' -- Step size ' + str(index_g + 1) + ' / ' + str(n_grad))
-
-                    # Run the gradient descent algorithm for d=1,2 and for the "right" and "left" problems
-                    out = bregmisi_all(mix_stft, spectro_mag, src_ref=src_ref, win_length=params['win_length'],
-                                       hop_length=params['hop_length'], win_type=params['win_type'], beta=b,
-                                       grad_step=g * np.ones((2, 2)), max_iter=params['max_iter'])
-
-                    # Store the SDR over iterations
-                    sdr_val[:, index_g, index_b, 0, 0, index_isnr, index_mix] = out['sdr_1r']
-                    sdr_val[:, index_g, index_b, 1, 0, index_isnr, index_mix] = out['sdr_2r']
-                    sdr_val[:, index_g, index_b, 0, 1, index_isnr, index_mix] = out['sdr_1l']
-                    sdr_val[:, index_g, index_b, 1, 1, index_isnr, index_mix] = out['sdr_2l']
+                          ' -- Algo ' + str(ia + 1) + ' / ' + str(n_algos) +
+                          ' -- Cons weight ' + str(ic + 1) + ' / ' + str(n_cons))
+                    
+                    src_est, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'],
+                                                                algo=algo,
+                                                                consistency_weigth=consistency_weight,
+                                                                max_iter=params['max_iter'],
+                                                                reference_sources=src_ref,
+                                                                hop_length=params['hop_length'],
+                                                                window=params['win_type'], compute_error=True)
+                    sdr_val[:, index_isnr, index_mix, ia, ic] = sdr
+                    error_val[:, index_isnr, index_mix, ia, ic] = error
 
     # Save results
-    np.savez(val_sdr_path, sdr=sdr_val)
+    np.savez(val_sdr_path, sdr_val=sdr_val, sdr_misi=sdr_misi, error_val=error_val, error_misi=error_misi)
 
     return
 
 
-def get_opt_gd_step(grad_step_range, val_sdr_path='outputs/val_sdr.npz'):
+def plot_val(params, val_sdr_path='outputs/val_sdr.npz'):
     """ Compute the optimal step size from the validation set SDR results
     Args:
         grad_step_range: numpy array - the step size grid
@@ -82,41 +95,49 @@ def get_opt_gd_step(grad_step_range, val_sdr_path='outputs/val_sdr.npz'):
     """
 
     # Load the validation SDR and average over mixtures
-    sdr = np.load(val_sdr_path)['sdr']
-    sdr_av = np.nanmean(sdr, axis=-1)
+    loader = np.load(val_sdr_path)
+    sdr_val, sdr_misi = np.nanmean(loader['sdr_val'], axis=2), np.nanmean(loader['sdr_misi'], axis=2)
 
-    # Remove Nans and values below 0 for better readability
-    sdr_av[np.isnan(sdr_av)] = 0
-    sdr_av[sdr_av < 0] = 0
+    plt.figure(0)
+    plt.plot(sdr_misi)
+    for index_isnr in range(3):
+        plt.subplot(1, 3, index_isnr + 1)
+        plt.plot(sdr_misi[:, index_isnr])
+        plt.xlabel('Iterations'), plt.ylabel('SDR (dB)')
+        plt.title('MISI')
 
-    # Get the optimal step size
-    gd_step_opt = grad_step_range[np.argmax(sdr_av[-1, :], axis=0)]
-    np.savez('outputs/val_gd_step.npz', gd_step=gd_step_opt)
+    plt.figure(1)
+    for ia in range(3):
+        for index_isnr in range(3):
+            plt.subplot(3, 3, ia*3+index_isnr+1)
+            plt.plot(sdr_val[:, index_isnr, ia, :])
+            if index_isnr==0: plt.ylabel(params['algos_list'][ia]),
+            if ia==0: plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
+    plt.legend(params['cons_weight_list'])
 
     return
 
 
 if __name__ == '__main__':
+
+    # Set random seed for reproducibility
+    np.random.seed(1234)
+
     # Parameters
     params = {'sample_rate': 16000,
               'win_length': 1024,
               'hop_length': 256,
               'n_fft': 1024,
               'win_type': 'hann',
-              'max_iter': 5,
+              'max_iter': 20,
               'n_mix': 50,
               'input_SNR_list': [10, 0, -10],
-              'grad_step_range': np.logspace(-7, 1, 9),
-              'beta_range': np.linspace(0, 2, 9)
+              'cons_weight_list': np.insert(np.logspace(-3, 3, 7), 0, 0),
+              'algos_list': ['Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
               }
 
     # Run the validation
     validation(params)
-
-    # Get the optimal step size
-    get_opt_gd_step(params['grad_step_range'])
-
-    # Plot the results
-    plot_val_results(params['input_SNR_list'], index_left_right=0)
+    plot_val(params['grad_step_range'])
 
 # EOF

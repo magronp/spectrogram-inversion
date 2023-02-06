@@ -48,11 +48,10 @@ def testing(params, test_sdr_path='outputs/test_sdr.npz'):
 
             # Estimate the magnitude spectrograms
             spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
-            spectro_mag = np.transpose(spectro_mag, (2, 0, 1))
 
             # Amplitude mask
             src_est_am = amplitude_mask(spectro_mag, mix_stft, win_length=params['win_length'],
-                                        hop_length=params['hop_length'], win_type=params['win_type'])
+                                        hop_length=params['hop_length'], window=params['win_type'])
             sdr_am[index_isnr, index_mix] = get_score(src_ref, src_est_am)
             record_src(audio_path + 'am_', src_est_am, params['sample_rate'])
 

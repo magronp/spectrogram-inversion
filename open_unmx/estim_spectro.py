@@ -141,8 +141,7 @@ def estim_spectro_from_mix(audio, device='cpu'):
     V = np.transpose(np.array(V), (1, 3, 2, 0))
 
     # Back to monochannel and remove extra 0 frames
-    V = V[:, :, 0, :].transpose(1, 0, 2)
-    #V = V[:, 2:-2, :]
+    V = np.transpose(V[:, :, 0, :], (2, 1, 0))
 
     return V
 

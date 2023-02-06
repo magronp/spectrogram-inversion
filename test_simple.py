@@ -6,8 +6,7 @@ from helpers.algos import get_score, amplitude_mask, misi, spectrogram_inversion
 from helpers.data_io import load_src, record_src
 from librosa import stft
 from open_unmx.estim_spectro import estim_spectro_from_mix
-from helpers.plotter import plot_test_results, plot_test_results_pernoise
-
+from matplotlib import pyplot as plt
 
 # Set random seed for reproducibility
 np.random.seed(1234)
@@ -18,7 +17,7 @@ params = {'sample_rate': 16000,
           'hop_length': 256,
           'n_fft': 1024,
           'win_type': 'hann',
-          'max_iter': 5,
+          'max_iter': 20,
           'n_mix': 50,
           'input_SNR_list': [10, 0, -10],
           }
@@ -39,24 +38,35 @@ mix_stft = stft(mix, n_fft=params['n_fft'], hop_length=params['hop_length'],
 
 # Estimate the magnitude spectrograms
 spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
-spectro_mag = np.transpose(spectro_mag, (2, 0, 1))
 
 # Amplitude mask
 src_est_am = amplitude_mask(spectro_mag, mix_stft, win_length=params['win_length'],
-                            hop_length=params['hop_length'], win_type=params['win_type'])
-sdr_am[index_isnr, index_mix] = get_score(src_ref, src_est_am)
-record_src(audio_path + 'am_', src_est_am, params['sample_rate'])
+                            hop_length=params['hop_length'], window=params['win_type'])
+sdr_am = get_score(src_ref, src_est_am)
 
-# MISI
-src_est_misi, error, sdr = misi(mix_stft, spectro_mag, src_ref=src_ref, win_length=params['win_length'], hop_length=params['hop_length'],
-                    max_iter=params['max_iter'], win_type=params['win_type'])
+algos_list = ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
+n_algos = len(algos_list)
+sdri_all = np.zeros((params['max_iter']+1, n_algos))
 
-estimated_sources, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo='MISI',
-                                                      consistency_weigth=1,
-                                                      max_iter=params['max_iter'], reference_sources=src_ref, hop_length=params['hop_length'],
-                                                      window=params['win_type'], compute_error=True)
+for ia, algo in enumerate(algos_list):
+    src_est, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo=algo,
+                                                consistency_weigth=0.1,
+                                                max_iter=params['max_iter'], reference_sources=src_ref,
+                                                hop_length=params['hop_length'],
+                                                window=params['win_type'], compute_error=True)
+    sdri_all[:, ia] = sdr
 
 
+_, _, sdr_icons_hardmix = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo='Incons_hardMix',
+                                            consistency_weigth=1,
+                                            max_iter=params['max_iter'], reference_sources=src_ref,
+                                            hop_length=params['hop_length'],
+                                            window=params['win_type'], compute_error=True)
+
+plt.figure()
+plt.plot(sdri_all)
+plt.legend(algos_list)
+plt.show()
 
 # EOF
 
