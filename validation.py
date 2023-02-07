@@ -3,39 +3,28 @@
 
 import numpy as np
 from helpers.data_io import load_src
-from librosa import stft, istft
-from helpers.algos import spectrogram_inversion, amplitude_mask
+from librosa import stft
+from helpers.algos import spectrogram_inversion
 from open_unmx.estim_spectro import estim_spectro_from_mix
-from helpers.plotter import plot_val_results
-from matplotlib import pyplot as plt
-
+import pickle
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
 
 
-def validation(params, val_sdr_path='outputs/val_sdr.npz'):
-    """ Run the proposed algorithm on the validation subset in different settings
-    Args:
-        params: dictionary with fields:
-            'sample rate': int - the sampling frequency
-            'n_mix': int - the number of mixtures to process
-            'max_iter': int - the nomber of iterations of the proposed algorithm
-            'input_SNR_list': list - the list of input SNRs to consider
-            'grad_step_range': numpy array - the step size grid
-            'beta_range': numpy array - the beta-divergence parameter grid
-            'hop_length': int - the hop size of the STFT
-            'win_length': int - the window length
-            'n_fft': int - the number of FFT points
-            'win_type': string - the STFT window type (e.g., Hann, Hamming, Blackman...)
-        val_sdr_path: string - the path where to store the validation SDR
-    """
+def validation(params, out_dir='outputs/'):
 
-    # Some parameters
+    val_sdr_path = out_dir + 'val_sdr.npz'
+
+    # Size Parameters
     n_isnr = len(params['input_SNR_list'])
-    n_algos, n_cons = len(params['algos_list']), params['cons_weight_list'].shape[0]
+    n_algos = len(params['algos_list'])
+    n_cons = params['cons_weight_list'].shape[0]
 
-    # Initialize the SDR array
+    # Initialize the SDR/error arrays
     sdr_val = np.zeros((params['max_iter'] + 1, n_isnr, params['n_mix'], n_algos, n_cons))
     sdr_misi = np.zeros((params['max_iter'] + 1, n_isnr, params['n_mix']))
     error_val = np.zeros((params['max_iter'], n_isnr, params['n_mix'], n_algos, n_cons))
@@ -87,33 +76,104 @@ def validation(params, val_sdr_path='outputs/val_sdr.npz'):
     return
 
 
-def plot_val(params, val_sdr_path='outputs/val_sdr.npz'):
-    """ Compute the optimal step size from the validation set SDR results
-    Args:
-        grad_step_range: numpy array - the step size grid
-        val_sdr_path: string - the path where to load the validation SDR
-    """
+def get_opt_val(params, out_dir='outputs/'):
+
+    val_sdr_path = out_dir + 'val_sdr.npz'
+    val_opt_path = out_dir + 'val_opt_'
+
+    # Size Parameters
+    n_isnr = len(params['input_SNR_list'])
+    n_algos = len(params['algos_list'])
+    n_cons = params['cons_weight_list'].shape[0]
 
     # Load the validation SDR and average over mixtures
     loader = np.load(val_sdr_path)
     sdr_val, sdr_misi = np.nanmean(loader['sdr_val'], axis=2), np.nanmean(loader['sdr_misi'], axis=2)
 
+    # Consistency-dependent algorithms - get optimal number of iterations and consistency weight
+    dict_iter_opt = {}.fromkeys(params['algos_list'], np.zeros(n_isnr))
+    dict_cons_opt = {}.fromkeys(params['algos_list'], np.zeros(n_isnr))
+
+    my_shape = (params['max_iter']+1, n_cons)
+    for ia in range(n_algos):
+        for index_isnr in range(n_isnr):
+            max_it, cons_opt_index = np.unravel_index(np.argmax(sdr_val[:, index_isnr, ia, :]), my_shape)
+            dict_iter_opt[params['algos_list'][ia]][index_isnr] = max_it
+            dict_cons_opt[params['algos_list'][ia]][index_isnr] = params['cons_weight_list'][cons_opt_index]
+
+    # MISI - get optimal number of iterations
+    dict_iter_opt['MISI'] = np.argmax(sdr_misi, axis=0)
+    dict_cons_opt['MISI'] = np.zeros(n_isnr)
+
+    # Add the info for the remaining algorithm for generality
+    dict_iter_opt['Incons_hardMix'] = np.ones(n_isnr)
+    dict_cons_opt['Incons_hardMix'] = np.zeros(n_isnr)
+
+    # Save results
+    with open(val_opt_path + 'iter.pkl', 'wb') as f:
+        pickle.dump(dict_iter_opt, f)
+    with open(val_opt_path + 'cons.pkl', 'wb') as f:
+        pickle.dump(dict_cons_opt, f)
+
+    return
+
+
+def plot_val(params, out_dir='outputs/'):
+
+    val_sdr_path = out_dir + 'val_sdr.npz'
+
+    # Size Parameters
+    n_isnr = len(params['input_SNR_list'])
+    n_algos = len(params['algos_list'])
+    n_cons = params['cons_weight_list'].shape[0]
+
+    # Load the validation SDR and average over mixtures
+    loader = np.load(val_sdr_path)
+    sdr_val, sdr_misi = np.nanmean(loader['sdr_val'], axis=2), np.nanmean(loader['sdr_misi'], axis=2)
+
+    # MISI over iterations
     plt.figure(0)
     plt.plot(sdr_misi)
-    for index_isnr in range(3):
-        plt.subplot(1, 3, index_isnr + 1)
+    for index_isnr in range(n_isnr):
+        plt.subplot(1, n_isnr, index_isnr + 1)
         plt.plot(sdr_misi[:, index_isnr])
-        plt.xlabel('Iterations'), plt.ylabel('SDR (dB)')
-        plt.title('MISI')
+        if index_isnr == 0:
+            plt.ylabel('SDR (dB)')
+        plt.xlabel('Iterations')
+        plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
+    plt.show()
 
+    # Consistency-dependent algorithms over iterations
     plt.figure(1)
-    for ia in range(3):
-        for index_isnr in range(3):
-            plt.subplot(3, 3, ia*3+index_isnr+1)
+    for ia in range(n_algos):
+        for index_isnr in range(n_isnr):
+            plt.subplot(n_algos, n_isnr, ia*n_isnr+index_isnr+1)
             plt.plot(sdr_val[:, index_isnr, ia, :])
-            if index_isnr==0: plt.ylabel(params['algos_list'][ia]),
-            if ia==0: plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
+            if index_isnr == 0:
+                plt.ylabel(params['algos_list'][ia]),
+            if ia == 0:
+                plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
     plt.legend(params['cons_weight_list'])
+    plt.show()
+
+    # Consistency-dependent algorithms over consistency weight
+    linestylelist = ['kx-', 'bo-', 'r+-']
+    cons_weight_str = [r"$0$", r"$10^{-3}$", r"$10^{-2}$", r"$10^{-1}$", r"$10^{0}$", r"$10^{1}$", r"$10^{2}$", r"$10^{3}$"]
+    sdr_val_opt_it = np.max(sdr_val, axis=0)
+    plt.figure(2)
+    for index_isnr in range(n_isnr):
+        plt.subplot(1, n_isnr, index_isnr + 1)
+        for ia in range(n_algos):
+            plt.plot(sdr_val_opt_it[index_isnr, ia, :], linestylelist[ia])
+        if index_isnr == 0:
+            plt.ylabel('SDR (dB)')
+        plt.xlabel('Consistency weight')
+        plt.xticks(np.arange(0, n_cons, 1), cons_weight_str)
+        plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
+        plt.grid('on')
+    plt.legend(params['algos_list'])
+    plt.show()
+    plt.tight_layout()
 
     return
 
@@ -124,6 +184,7 @@ if __name__ == '__main__':
     np.random.seed(1234)
 
     # Parameters
+    out_dir = 'outputs/'
     params = {'sample_rate': 16000,
               'win_length': 1024,
               'hop_length': 256,
@@ -137,7 +198,8 @@ if __name__ == '__main__':
               }
 
     # Run the validation
-    validation(params)
-    plot_val(params['grad_step_range'])
+    validation(params, out_dir)
+    get_opt_val(params, out_dir)
+    plot_val(params, out_dir)
 
 # EOF

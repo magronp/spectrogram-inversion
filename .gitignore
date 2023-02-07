@@ -2,4 +2,5 @@
 *.wav
 *.pth
 *.json
-*.npz
+data/
+!data/dummy.txt

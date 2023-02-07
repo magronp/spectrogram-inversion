@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import fnmatch
+import os
 import numpy as np
 import librosa
 import soundfile
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
+
+
+def find_files(directory, pattern='*.txt'):
+    """Recursively find all files matching the pattern."""
+    files = []
+    for root, dirnames, filenames in os.walk(directory):
+        for filename in fnmatch.filter(filenames, pattern):
+            files.append(os.path.join(root, filename))
+    return files
 
 
 def load_src(audio_path, sample_rate):

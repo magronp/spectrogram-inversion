@@ -6,7 +6,7 @@ import numpy as np
 import librosa
 from helpers.stft import my_stft, my_istft
 from librosa import stft, istft
-from helpers.data_io import record_src
+from helpers.data_io import record_src, find_files
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
@@ -37,9 +37,9 @@ def prep_dataset(params):
             'input_SNR_list': list - the list of input SNRs to consider
     """
 
-    # Load the noises, keep the 1st of the 16 channels
-    noise_data_list = librosa.util.find_files(params['noise_data_dir'], ext='wav')
-    noise_data_list = [n for n in noise_data_list if n.__contains__('ch01')]
+    # Load the noise signals (keep the 1st channel only)
+    noise_data_list = find_files(params['noise_data_dir'], pattern='*ch01.wav')
+
     noise_total = np.array([])
     for n in noise_data_list:
         noise_total = np.concatenate((noise_total, librosa.core.load(n, sr=params['sample_rate'])[0]))
@@ -47,7 +47,7 @@ def prep_dataset(params):
     noise_total_len = noise_total.shape[0]
 
     # Load the list of clean speech files and shuffle it
-    speech_data_list = librosa.util.find_files(params['speech_data_dir'], ext='wav')
+    speech_data_list = find_files(params['speech_data_dir'], pattern='*.wav')
     np.random.shuffle(speech_data_list)
 
     # Create the mixtures
@@ -75,9 +75,9 @@ def prep_dataset(params):
 
             # Take the STFT and iSTFT to ensure the length is fixed
             src_ref_stft = stft(src_ref, n_fft=params['n_fft'], hop_length=params['hop_length'],
-                                   win_length=params['win_length'], window=params['win_type'])
+                                win_length=params['win_length'], window=params['win_type'])
             src_ref = istft(src_ref_stft, hop_length=params['hop_length'], win_length=params['win_length'],
-                         window=params['win_type'])
+                            window=params['win_type'])
 
             # Create the folder to record the wav (if necessary)
             rec_dir = 'data/SNR_' + str(iSNR) + '/' + str(n)

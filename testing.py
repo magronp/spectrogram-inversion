@@ -2,39 +2,37 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from helpers.algos import get_score, amplitude_mask, misi
-from helpers.data_io import load_src, record_src
+from helpers.algos import get_score, amplitude_mask, spectrogram_inversion
+from helpers.data_io import load_src
 from librosa import stft
 from open_unmx.estim_spectro import estim_spectro_from_mix
-from helpers.plotter import plot_test_results, plot_test_results_pernoise
+import pickle
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
 __author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
 __docformat__ = 'reStructuredText'
 
 
-def testing(params, test_sdr_path='outputs/test_sdr.npz'):
-    """ Run the proposed algorithm on the test subset and the MISI and AM baselines
-    Args:
-        params: dictionary with fields:
-            'sample rate': int - the sampling frequency
-            'n_mix': int - the number of mixtures to process
-            'max_iter': int - the nomber of iterations of the proposed algorithm
-            'input_SNR_list': list - the list of input SNRs to consider
-            'beta_range': numpy array - the beta-divergence parameter grid
-            'hop_length': int - the hop size of the STFT
-            'win_length': int - the window length
-            'n_fft': int - the number of FFT points
-            'win_type': string - the STFT window type (e.g., Hann, Hamming, Blackman...)
-        test_sdr_path: string - the path where to store the test SDR
-    """
+def testing(params, out_dir='outputs/'):
 
-    # Define some parameters and initialize the SNR array
+    # paths
+    val_opt_path = out_dir + 'val_opt_'
+    test_sdr_path = out_dir + 'test_sdr.npz'
+
+    # Size Parameters
     n_isnr = len(params['input_SNR_list'])
-    sdr_am = np.zeros((n_isnr, params['n_mix']))
-    sdr_misi = np.zeros((n_isnr, params['n_mix']))
+    n_algos = len(params['algos_list'])
 
-    # Load the optimal step sizes from validation
-    #gd_step_opt = np.load('outputs/val_gd_step.npz')['gd_step']
+    # Initialize the SDR array
+    sdr_test = np.zeros((n_algos+1, n_isnr, params['n_mix']))
+
+    # Load the optimal consistency weight and numbers of iterations from validation
+    with open(val_opt_path + 'iter.pkl', 'rb') as f:
+        iter_opt = pickle.load(f)
+    with open(val_opt_path + 'cons.pkl', 'rb') as f:
+        cons_opt = pickle.load(f)
 
     # Loop over iSNRs, mixtures and parameters
     for index_isnr, isnr in enumerate(params['input_SNR_list']):
@@ -52,17 +50,39 @@ def testing(params, test_sdr_path='outputs/test_sdr.npz'):
             # Amplitude mask
             src_est_am = amplitude_mask(spectro_mag, mix_stft, win_length=params['win_length'],
                                         hop_length=params['hop_length'], window=params['win_type'])
-            sdr_am[index_isnr, index_mix] = get_score(src_ref, src_est_am)
-            record_src(audio_path + 'am_', src_est_am, params['sample_rate'])
+            sdr_test[0, index_isnr, index_mix] = get_score(src_ref, src_est_am)
 
-            # MISI
-            src_est_misi = misi(mix_stft, spectro_mag, win_length=params['win_length'], hop_length=params['hop_length'],
-                                max_iter=params['max_iter'])[0]
-            sdr_misi[index_isnr, index_mix] = get_score(src_ref, src_est_misi)
-            record_src(audio_path + 'misi_', src_est_misi, params['sample_rate'])
+            # Validation for all algos depending on a consistency weight
+            for ia, algo in enumerate(params['algos_list']):
+                print('iSNR ' + str(index_isnr + 1) + ' / ' + str(n_isnr) +
+                      ' -- Mix ' + str(index_mix + 1) + ' / ' + str(params['n_mix']) +
+                      ' -- Algo ' + str(ia + 1) + ' / ' + str(n_algos))
+
+                # Get the optimmal number of iterations and consistency weight for the current algorithm
+                max_iter, cons_weight = int(iter_opt[algo][index_isnr]), cons_opt[algo][index_isnr]
+
+                # Apply the algorithm and collect the score
+                src_est = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo=algo,
+                                                consistency_weigth=cons_weight, max_iter=max_iter,
+                                                hop_length=params['hop_length'], window=params['win_type'])[0]
+                sdr_test[ia+1, index_isnr, index_mix] = get_score(src_ref, src_est)
 
     # Save results
-    np.savez(test_sdr_path, sdr_am=sdr_am, sdr_misi=sdr_misi)
+    np.savez(test_sdr_path, sdr_test=sdr_test)
+
+    return
+
+
+def display_test_results(params, out_dir='outputs/'):
+
+    algos_list = params['algos_list']
+    algos_list.insert(0, 'AM')
+    test_sdr_path = out_dir + 'test_sdr.npz'
+    sdr_test = np.median(np.load(test_sdr_path)['sdr_test'], axis=-1)
+    for index_isnr, isnr in enumerate(params['input_SNR_list']):
+        print('------ iSNR =' + str(isnr) + ' dB')
+        for ia, algo in enumerate(params['algos_list']):
+            print(algo + ' --  {:.1f}'.format(sdr_test[ia, index_isnr]))
 
     return
 
@@ -73,21 +93,19 @@ if __name__ == '__main__':
     np.random.seed(1234)
 
     # Parameters
+    out_dir = 'outputs/'
     params = {'sample_rate': 16000,
               'win_length': 1024,
               'hop_length': 256,
               'n_fft': 1024,
               'win_type': 'hann',
-              'max_iter': 5,
               'n_mix': 50,
               'input_SNR_list': [10, 0, -10],
+              'algos_list': ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Incons_hardMix', 'Mag+Incons_hardMix']
               }
 
     # Run the benchmark on the test set
-    testing(params)
-
-    # Plot the results
-    #plot_test_results(params['input_SNR_list'], params['beta_range'])
+    testing(params, out_dir)
+    display_test_results(params, out_dir)
 
 # EOF
-
