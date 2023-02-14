@@ -38,7 +38,7 @@ def validation(params, out_dir='outputs/'):
             audio_path = 'data/SNR_' + str(isnr) + '/' + str(index_mix + params['n_mix']) + '/'
             src_ref, mix = load_src(audio_path, params['sample_rate'])
             mix_stft = stft(mix, n_fft=params['n_fft'], hop_length=params['hop_length'],
-                               win_length=params['win_length'], window=params['win_type'])
+                            win_length=params['win_length'], window=params['win_type'])
 
             # Estimate the magnitude spectrograms
             spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
