@@ -44,10 +44,11 @@ def validation(params, out_dir='outputs/'):
             spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
 
             # MISI
-            _, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo='MISI',
-                                                  max_iter=params['max_iter'], reference_sources=src_ref,
+            _, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo='MISI', max_iter=params['max_iter'],
+                                                  reference_sources=src_ref, win_length=params['win_length'],
                                                   hop_length=params['hop_length'], window=params['win_type'],
                                                   compute_error=True)
+
             sdr_misi[:, index_isnr, index_mix] = sdr
             error_misi[:, index_isnr, index_mix] = error
 
@@ -60,13 +61,12 @@ def validation(params, out_dir='outputs/'):
                           ' -- Algo ' + str(ia + 1) + ' / ' + str(n_algos) +
                           ' -- Cons weight ' + str(ic + 1) + ' / ' + str(n_cons))
                     
-                    src_est, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'],
-                                                                algo=algo,
-                                                                consistency_weigth=consistency_weight,
-                                                                max_iter=params['max_iter'],
-                                                                reference_sources=src_ref,
-                                                                hop_length=params['hop_length'],
-                                                                window=params['win_type'], compute_error=True)
+                    src_est, error, sdr =\
+                        spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=consistency_weight,
+                                              max_iter=params['max_iter'], reference_sources=src_ref,
+                                              win_length=params['win_length'], hop_length=params['hop_length'],
+                                              window=params['win_type'], compute_error=True)
+
                     sdr_val[:, index_isnr, index_mix, ia, ic] = sdr
                     error_val[:, index_isnr, index_mix, ia, ic] = error
 
@@ -157,7 +157,7 @@ def plot_val(params, out_dir='outputs/'):
     plt.show()
 
     # Consistency-dependent algorithms over consistency weight
-    linestylelist = ['kx-', 'bo-', 'r+-']
+    linestylelist = ['kx-', 'bo-', 'bo--', 'r+-', 'r+--']
     cons_weight_str = [r"$0$", r"$10^{-3}$", r"$10^{-2}$", r"$10^{-1}$", r"$10^{0}$", r"$10^{1}$", r"$10^{2}$", r"$10^{3}$"]
     sdr_val_opt_it = np.max(sdr_val, axis=0)
     plt.figure(2)
@@ -166,10 +166,10 @@ def plot_val(params, out_dir='outputs/'):
         for ia in range(n_algos):
             plt.plot(sdr_val_opt_it[index_isnr, ia, :], linestylelist[ia])
         if index_isnr == 0:
-            plt.ylabel('SDR (dB)')
-        plt.xlabel('Consistency weight')
+            plt.ylabel('SDR (dB)', fontsize=16)
+        plt.xlabel('Consistency weight', fontsize=16)
         plt.xticks(np.arange(0, n_cons, 1), cons_weight_str)
-        plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
+        plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB', fontsize=16)
         plt.grid('on')
     plt.legend(params['algos_list'])
     plt.show()
@@ -194,7 +194,9 @@ if __name__ == '__main__':
               'n_mix': 50,
               'input_SNR_list': [10, 0, -10],
               'cons_weight_list': np.insert(np.logspace(-3, 3, 7), 0, 0),
-              'algos_list': ['Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
+              'algos_list': ['Mix+Incons', 'Mix+Incons_optweights',
+                             'Mix+Incons_hardMag', 'Mix+Incons_hardMag_optweights',
+                             'Mag+Incons_hardMix'],
               }
 
     # Run the validation

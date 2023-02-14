@@ -101,11 +101,13 @@ if __name__ == '__main__':
               'win_type': 'hann',
               'n_mix': 50,
               'input_SNR_list': [10, 0, -10],
-              'algos_list': ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Incons_hardMix', 'Mag+Incons_hardMix']
+              'algos_list': ['MISI', 'Mix+Incons', 'Mix+Incons_optweights',
+                             'Mix+Incons_hardMag', 'Mix+Incons_hardMag_optweights',
+                             'Incons_hardMix', 'Mag+Incons_hardMix']
               }
 
     # Run the benchmark on the test set
-    testing(params, out_dir)
+    #testing(params, out_dir)
     display_test_results(params, out_dir)
 
 # EOF

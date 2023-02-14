@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from helpers.algos import get_score, amplitude_mask, misi, spectrogram_inversion
-from helpers.data_io import load_src, record_src
+from helpers.algos import get_score, amplitude_mask, spectrogram_inversion
+from helpers.data_io import load_src
 from librosa import stft
 from open_unmx.estim_spectro import estim_spectro_from_mix
 from matplotlib import pyplot as plt
@@ -39,29 +39,11 @@ mix_stft = stft(mix, n_fft=params['n_fft'], hop_length=params['hop_length'],
 # Estimate the magnitude spectrograms
 spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
 
-# Amplitude mask
-src_est_am = amplitude_mask(spectro_mag, mix_stft, win_length=params['win_length'],
-                            hop_length=params['hop_length'], window=params['win_type'])
-sdr_am = get_score(src_ref, src_est_am)
+_, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo='Mix+Incons', consistency_weigth=1,
+                                  mixing_type='err_ratio', max_iter=params['max_iter'], reference_sources=src_ref,
+                                  win_length=params['win_length'], hop_length=params['hop_length'],
+                                  window=params['win_type'], compute_error=True)
 
-algos_list = ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
-n_algos = len(algos_list)
-sdri_all = np.zeros((params['max_iter']+1, n_algos))
-
-for ia, algo in enumerate(algos_list):
-    src_est, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo=algo,
-                                                consistency_weigth=0.1,
-                                                max_iter=params['max_iter'], reference_sources=src_ref,
-                                                hop_length=params['hop_length'],
-                                                window=params['win_type'], compute_error=True)
-    sdri_all[:, ia] = sdr
-
-
-_, _, sdr_icons_hardmix = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo='Incons_hardMix',
-                                            consistency_weigth=1,
-                                            max_iter=params['max_iter'], reference_sources=src_ref,
-                                            hop_length=params['hop_length'],
-                                            window=params['win_type'], compute_error=True)
 
 plt.figure()
 plt.plot(sdri_all)
