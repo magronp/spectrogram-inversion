@@ -4,3 +4,4 @@
 *.json
 data/
 !data/dummy.txt
+env/
