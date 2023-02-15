@@ -59,11 +59,11 @@ def testing(params, out_dir='outputs/'):
                       ' -- Algo ' + str(ia + 1) + ' / ' + str(n_algos))
 
                 # Get the optimal number of iterations and consistency weight for the current algorithm
-                max_iter, cons_weight = int(iter_opt[algo][index_isnr]), cons_opt[algo][index_isnr]
+                max_iter_opt, cons_weight = int(iter_opt[algo][index_isnr]), cons_opt[algo][index_isnr]
 
                 # Apply the algorithm and collect the score
-                src_est = spectrogram_inversion(mix_stft, spectro_mag, params['win_length'], algo=algo,
-                                                consistency_weigth=cons_weight, max_iter=max_iter,
+                src_est = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=cons_weight,
+                                                max_iter=max_iter_opt,  win_length=params['win_length'],
                                                 hop_length=params['hop_length'], window=params['win_type'])[0]
                 sdr_test[ia+1, index_isnr, index_mix] = get_score(src_ref, src_est)
 
@@ -101,13 +101,11 @@ if __name__ == '__main__':
               'win_type': 'hann',
               'n_mix': 50,
               'input_SNR_list': [10, 0, -10],
-              'algos_list': ['MISI', 'Mix+Incons', 'Mix+Incons_optweights',
-                             'Mix+Incons_hardMag', 'Mix+Incons_hardMag_optweights',
-                             'Incons_hardMix', 'Mag+Incons_hardMix']
+              'algos_list': ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Incons_hardMix', 'Mag+Incons_hardMix']
               }
 
     # Run the benchmark on the test set
-    #testing(params, out_dir)
+    testing(params, out_dir)
     display_test_results(params, out_dir)
 
 # EOF
