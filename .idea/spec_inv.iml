@@ -3,12 +3,12 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/data/VoiceBank" />
-      <excludeFolder url="file://$MODULE_DIR$/data/SNR_10" />
       <excludeFolder url="file://$MODULE_DIR$/data/SNR_0" />
       <excludeFolder url="file://$MODULE_DIR$/data/SNR_-10" />
+      <excludeFolder url="file://$MODULE_DIR$/data/SNR_10" />
       <excludeFolder url="file://$MODULE_DIR$/data/DEMAND" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.10" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

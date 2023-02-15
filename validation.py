@@ -157,7 +157,7 @@ def plot_val(params, out_dir='outputs/'):
     plt.show()
 
     # Consistency-dependent algorithms over consistency weight
-    linestylelist = ['kx-', 'bo-', 'bo--', 'r+-', 'r+--']
+    linestylelist = ['bo:', 'bo--', 'r+:', 'r+--', 'kx-']
     cons_weight_str = [r"$0$", r"$10^{-3}$", r"$10^{-2}$", r"$10^{-1}$", r"$10^{0}$", r"$10^{1}$", r"$10^{2}$", r"$10^{3}$"]
     sdr_val_opt_it = np.max(sdr_val, axis=0)
     plt.figure(2)
@@ -190,8 +190,8 @@ if __name__ == '__main__':
               'hop_length': 256,
               'n_fft': 1024,
               'win_type': 'hann',
-              'max_iter': 20,
-              'n_mix': 50,
+              'max_iter': 5,
+              'n_mix': 3,
               'input_SNR_list': [10, 0, -10],
               'cons_weight_list': np.insert(np.logspace(-3, 3, 7), 0, 0),
               'algos_list': ['Mix+Incons', 'Mix+Incons_optweights',

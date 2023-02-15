@@ -58,7 +58,7 @@ def testing(params, out_dir='outputs/'):
                       ' -- Mix ' + str(index_mix + 1) + ' / ' + str(params['n_mix']) +
                       ' -- Algo ' + str(ia + 1) + ' / ' + str(n_algos))
 
-                # Get the optimmal number of iterations and consistency weight for the current algorithm
+                # Get the optimal number of iterations and consistency weight for the current algorithm
                 max_iter, cons_weight = int(iter_opt[algo][index_isnr]), cons_opt[algo][index_isnr]
 
                 # Apply the algorithm and collect the score

@@ -144,22 +144,23 @@ def p_mag(sources_stft, target_magnitudes):
 
 def get_mixing_weights(aux_mix, sources_stft, target_magnitudes, mixing_type='mag_ratio'):
 
-    nsrc = sources_stft.shape[0]
-    eps = sys.float_info.epsilon
     if mixing_type == 'mag_ratio':
-        mixing_weights = target_magnitudes / (np.repeat(np.sum(target_magnitudes, axis=0)[np.newaxis, :, :], nsrc, axis=0) + eps)
+        ratio = target_magnitudes
     elif mixing_type == 'err_ratio':
-        err_sc = np.abs(aux_mix - sources_stft)
-        mixing_weights = err_sc / (np.repeat(np.sum(err_sc, axis=0)[np.newaxis, :, :], nsrc, axis=0) + eps)
+        ratio = np.abs(aux_mix - sources_stft)
     else:
         raise ValueError('Unknown algorithm')
+
+    nsrc = ratio.shape[0]
+    mixing_weights = ratio / (np.repeat(np.sum(ratio, axis=0)[np.newaxis, :, :], nsrc, axis=0) + sys.float_info.epsilon)
 
     return mixing_weights
 
 
-def spectrogram_inversion_update(mixture_stft, sources_stft, target_magnitudes,  algo='MISI', consistency_weigth=1,
-                                 mixing_weights=None, mixing_type='mag_ratio', win_length=None, hop_length=None, window='hann',
-                                 compute_error=False):
+def spectrogram_inversion_update(mixture_stft, sources_stft, target_magnitudes, algo='MISI', consistency_weigth=1,
+                                 mixing_weights=None, mixing_type='mag_ratio', win_length=None, hop_length=None,
+                                 window='hann', compute_error=False):
+
     # Parameters
     n_fft = (sources_stft.shape[1] - 1) * 2
     if win_length is None: win_length = n_fft
@@ -177,23 +178,23 @@ def spectrogram_inversion_update(mixture_stft, sources_stft, target_magnitudes, 
         update_sources_stft = p_cons(sources_stft, win_length, hop_length=hop_length, window=window)
         update_sources_stft = p_mix(update_sources_stft, mixture_stft)
 
-    elif algo == 'Mix+Incons_hardMag' or 'Mix+Incons_hardMag_optweights':
+    elif algo == 'Mix+Incons_hardMag' or algo == 'Mix+Incons_hardMag_optweights':
         aux_cons = p_cons(sources_stft, win_length, hop_length=hop_length, window=window)
         aux_mix = p_mix(sources_stft, mixture_stft, mixing_weights)
         update_sources_stft = p_mag(aux_mix + consistency_weigth * mixing_weights * aux_cons, target_magnitudes)
         # Update the mixing weights if needed
-        mixing_weights = get_mixing_weights(mixture_stft, sources_stft, target_magnitudes, mixing_type=mixing_type)
+        mixing_weights = get_mixing_weights(aux_mix, sources_stft, target_magnitudes, mixing_type=mixing_type)
         if compute_error:
             error = np.linalg.norm(mixture_stft - np.sum(sources_stft, axis=0)) +\
                     consistency_weigth * np.linalg.norm(aux_cons - sources_stft)
 
-    elif algo == 'Mix+Incons' or 'Mix+Incons_optweights':
+    elif algo == 'Mix+Incons' or algo == 'Mix+Incons_optweights':
         aux_cons = p_cons(sources_stft, win_length, hop_length=hop_length, window=window)
         aux_mix = p_mix(sources_stft, mixture_stft, mixing_weights)
         update_sources_stft = (aux_mix + consistency_weigth * mixing_weights * aux_cons) /\
                               (1 + consistency_weigth * mixing_weights)
         # Update the mixing weights if needed
-        mixing_weights = get_mixing_weights(mixture_stft, sources_stft, target_magnitudes, mixing_type=mixing_type)
+        mixing_weights = get_mixing_weights(aux_mix, sources_stft, target_magnitudes, mixing_type=mixing_type)
         if compute_error:
             error = np.linalg.norm(mixture_stft - np.sum(sources_stft, axis=0)) +\
                     consistency_weigth * np.linalg.norm(aux_cons - sources_stft)
@@ -223,7 +224,8 @@ def spectrogram_inversion(mixture_stft, target_magnitudes, algo='MISI', consiste
     if algo=='Incons_hardMix':
         max_iter = 1
 
-    if algo=='Mix+Incons' or 'Mix+Incons_hardMag' or 'Mix+Incons_optweights' or 'Mix+Incons_hardMag_optweights':
+    if algo == 'Mix+Incons' or algo == 'Mix+Incons_hardMag' or algo == 'Mix+Incons_optweights'\
+            or algo == 'Mix+Incons_hardMag_optweights':
         mixing_weights = target_magnitudes / (
                 np.repeat(np.sum(target_magnitudes, axis=0)[np.newaxis, :, :], nsrc, axis=0) + sys.float_info.epsilon)
         mixing_type = 'mag_ratio'
@@ -241,22 +243,21 @@ def spectrogram_inversion(mixture_stft, target_magnitudes, algo='MISI', consiste
         estimated_sources = istft(sources_stft, win_length=win_length, hop_length=hop_length, window=window)
         sdr.append(get_score(reference_sources, estimated_sources))
 
-    if not(algo == 'AM'):
-        # Iterations
-        for iteration_number in range(max_iter):
+    # Iterations
+    for iteration_number in range(max_iter):
 
-            # Update
-            sources_stft, err, mixing_weights =\
-                spectrogram_inversion_update(mixture_stft, sources_stft, target_magnitudes, algo=algo,
-                                             consistency_weigth=consistency_weigth, mixing_weights=mixing_weights,
-                                             mixing_type=mixing_type, win_length=win_length,  hop_length=hop_length,
-                                             window=window, compute_error=compute_error)
-            error.append(err)
+        # Update
+        sources_stft, err, mixing_weights =\
+            spectrogram_inversion_update(mixture_stft, sources_stft, target_magnitudes, algo=algo,
+                                         consistency_weigth=consistency_weigth, mixing_weights=mixing_weights,
+                                         mixing_type=mixing_type, win_length=win_length,  hop_length=hop_length,
+                                         window=window, compute_error=compute_error)
+        error.append(err)
 
-            # If the score needs to be computed
-            if compute_sdr:
-                estimated_sources = istft(sources_stft, win_length=win_length, hop_length=hop_length, window=window)
-                sdr.append(get_score(reference_sources, estimated_sources))
+        # If the score needs to be computed
+        if compute_sdr:
+            estimated_sources = istft(sources_stft, win_length=win_length, hop_length=hop_length, window=window)
+            sdr.append(get_score(reference_sources, estimated_sources))
 
     # After the iterative loop, inverse STFT if it hasn't been done
     if not compute_sdr:

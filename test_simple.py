@@ -19,7 +19,7 @@ params = {'sample_rate': 16000,
           'win_type': 'hann',
           'max_iter': 20,
           'n_mix': 50,
-          'input_SNR_list': [10, 0, -10],
+          'input_SNR_list': [10, 0, -10]
           }
 
 # Define some parameters and initialize the SNR array
@@ -38,17 +38,15 @@ mix_stft = stft(mix, n_fft=params['n_fft'], hop_length=params['hop_length'],
 
 # Estimate the magnitude spectrograms
 spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
+algos_list = ['Mix+Incons', 'Mix+Incons_optweights', 'Mix+Incons_hardMag', 'Mix+Incons_hardMag_optweights', 'Mag+Incons_hardMix']
 
-_, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo='Mix+Incons', consistency_weigth=1,
-                                  mixing_type='err_ratio', max_iter=params['max_iter'], reference_sources=src_ref,
-                                  win_length=params['win_length'], hop_length=params['hop_length'],
-                                  window=params['win_type'], compute_error=True)
-
-
-plt.figure()
-plt.plot(sdri_all)
-plt.legend(algos_list)
-plt.show()
+for algo in algos_list:
+    _, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=1,
+                                      max_iter=params['max_iter'], reference_sources=src_ref,
+                                      win_length=params['win_length'], hop_length=params['hop_length'],
+                                      window=params['win_type'], compute_error=True)
+    plt.plot(sdr, label=algo)
+plt.legend()
 
 # EOF
 
