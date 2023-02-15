@@ -12,16 +12,15 @@ The needed packages are listed in `requirements.txt`.
 For convenience, you can create a virtual environment and automatically install them as follows:
 
     python3 −m venv env
-    source env/ bin/activate
+    source env/bin/activate
     pip3 install -r requirements.txt
 
 
 ### Getting the data
 
-you will need to get the speech and noise data to reproduce the results.
+You will need to get the speech and noise data to reproduce the results.
 
 * The speech data is obtained from the __VoiceBank__ dataset available [here](https://datashare.is.ed.ac.uk/handle/10283/2791). You should download the `clean_testset_wav.zip` file, and unzip it in the `data/VoiceBank/` folder.
-Note that you can change the folder structure, as long as you change the path accordingly in the code.
 
 * The noise data is obtained from the __DEMAND__ dataset available [here](https://zenodo.org/record/1227121#.X4hjZXZfg5k). You should download the `DLIVING_16k.zip`, `SPSQUARE_16k.zip` and `TBUS_16k.zip` files, and unzip them in the `data/DEMAND/` folder.
 
@@ -31,21 +30,20 @@ Then, simply execute the `prepare_data.py` script to create the noisy mixtures.
 
 ### Getting the pre-trained model
 
-To run the experiments, you will need to first estimate the spectrograms of the sources, which is done using the pytorch implementation of the [Open Unmix](https://github.com/sigsep/open-unmix-pytorch) model trained for a speech enhancement task. 
-
-The pre-trained model for estimating the speech and noise spectrograms is available [here](https://zenodo.org/record/3786908#.X4hkeHZfg5k).
+Since the experiments involve estimating the sources' magnitude spectrograms, you need to download the pytorch implementation of the Open Unmix pre-trained model available [here](https://zenodo.org/record/3786908#.X4hkeHZfg5k).
 You should place the  `.json` and `.pth` files in the `open_unmx/` folder, and rename the `.pth` files as `speech.pth` and `noise.pth`.
+Note that you don't need to install the [Open Unmix](https://github.com/sigsep/open-unmix-pytorch) package (a simplified and adapted code is provided in this repository), but make sure to check it out ;)
 
 ## Reproducing the experiments
 
 Now that you're all set, you can run the following scripts:
 
-- 'test_simple.py' run all algorithms on a single noisy mixture and display the SDR over iterations.
+- `test_simple.py` runs all algorithms on a single noisy mixture and displays the SDR over iterations.
 
-- `validation.py` will perform a grid search over the consistency weights on the validation subset to determine its optimal value for all algorithms. It will also select the optimal number of iterations for each algorithm.
-It will also reproduce Fig. 1a-1d from the paper.
+- `validation.py` performs a grid search over the consistency weights on the validation subset to determine its optimal value for all algorithms. It also selects the optimal number of iterations for each algorithm.
+It also plots the validation results, also reproduce Fig. 1a-1d from the paper.
 
-- `testing.py` will run the algorithms on the test subset and display the results corresponding to Table. 2 in the paper.
+- `testing.py` runs the algorithms on the test subset and displays the results corresponding to Table. 2 in the paper.
 
 
 ## Reference
