@@ -1,5 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
+__docformat__ = 'reStructuredText'
 
 import numpy as np
 import torch
@@ -10,8 +12,6 @@ import tqdm
 import sys
 eps = sys.float_info.epsilon
 
-__author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
-__docformat__ = 'reStructuredText'
 '''
 This script is largely adapted from the original Open Unmix code,
 which is available at: https://github.com/sigsep/open-unmix-pytorch

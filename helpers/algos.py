@@ -1,12 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
+__docformat__ = 'reStructuredText'
 
 import numpy as np
 import sys
 from librosa import stft, istft
-
-__author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
-__docformat__ = 'reStructuredText'
 
 
 def get_score(src_ref, src_est, eps=1e-8):
@@ -105,7 +104,6 @@ def misi(mix_stft, spectro_mag, win_length=None, hop_length=None, src_ref=None, 
         error.append(np.linalg.norm(current_magnitude - spectro_mag))
 
     return src_est, error, sdr
-
 
 
 # The three projectors

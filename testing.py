@@ -1,5 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
+__docformat__ = 'reStructuredText'
 
 import numpy as np
 from helpers.algos import get_score, amplitude_mask, spectrogram_inversion
@@ -7,12 +9,6 @@ from helpers.data_io import load_src
 from librosa import stft
 from open_unmx.estim_spectro import estim_spectro_from_mix
 import pickle
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-
-__author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
-__docformat__ = 'reStructuredText'
 
 
 def testing(params, out_dir='outputs/'):

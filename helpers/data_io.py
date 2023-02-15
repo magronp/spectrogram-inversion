@@ -1,14 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
+__docformat__ = 'reStructuredText'
 
 import fnmatch
 import os
 import numpy as np
 import librosa
 import soundfile
-
-__author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
-__docformat__ = 'reStructuredText'
 
 
 def find_files(directory, pattern='*.txt'):

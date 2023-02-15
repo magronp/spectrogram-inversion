@@ -1,15 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
+__docformat__ = 'reStructuredText'
 
 import os
 import numpy as np
 import librosa
-from helpers.stft import my_stft, my_istft
 from librosa import stft, istft
 from helpers.data_io import record_src, find_files
-
-__author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
-__docformat__ = 'reStructuredText'
 
 
 def adjust_noise_at_isnr(clean, noise, input_snr=0):

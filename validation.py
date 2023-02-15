@@ -1,5 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+__author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
+__docformat__ = 'reStructuredText'
 
 import numpy as np
 from helpers.data_io import load_src
@@ -7,12 +9,7 @@ from librosa import stft
 from helpers.algos import spectrogram_inversion
 from open_unmx.estim_spectro import estim_spectro_from_mix
 import pickle
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-
-__author__ = 'Paul Magron -- IRIT, Université de Toulouse, CNRS, France'
-__docformat__ = 'reStructuredText'
+from helpers.plotter import plot_val_figures_article, plot_val_results
 
 
 def validation(params, out_dir='outputs/'):
@@ -118,67 +115,6 @@ def get_opt_val(params, out_dir='outputs/'):
     return
 
 
-def plot_val(params, out_dir='outputs/'):
-
-    val_sdr_path = out_dir + 'val_sdr.npz'
-
-    # Size Parameters
-    n_isnr = len(params['input_SNR_list'])
-    n_algos = len(params['algos_list'])
-    n_cons = params['cons_weight_list'].shape[0]
-
-    # Load the validation SDR and average over mixtures
-    loader = np.load(val_sdr_path)
-    sdr_val, sdr_misi = np.nanmean(loader['sdr_val'], axis=2), np.nanmean(loader['sdr_misi'], axis=2)
-
-    # MISI over iterations
-    plt.figure(0)
-    plt.plot(sdr_misi)
-    for index_isnr in range(n_isnr):
-        plt.subplot(1, n_isnr, index_isnr + 1)
-        plt.plot(sdr_misi[:, index_isnr])
-        if index_isnr == 0:
-            plt.ylabel('SDR (dB)')
-        plt.xlabel('Iterations')
-        plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
-    plt.show()
-
-    # Consistency-dependent algorithms over iterations
-    plt.figure(1)
-    for ia in range(n_algos):
-        for index_isnr in range(n_isnr):
-            plt.subplot(n_algos, n_isnr, ia*n_isnr+index_isnr+1)
-            plt.plot(sdr_val[:, index_isnr, ia, :])
-            if index_isnr == 0:
-                plt.ylabel(params['algos_list'][ia]),
-            if ia == 0:
-                plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
-    plt.legend(params['cons_weight_list'])
-    plt.show()
-
-    # Consistency-dependent algorithms over consistency weight
-    #linestylelist = ['bo:', 'bo--', 'r+:', 'r+--', 'kx-']
-    linestylelist = ['bo:', 'r+--', 'kx-']
-    cons_weight_str = [r"$0$", r"$10^{-3}$", r"$10^{-2}$", r"$10^{-1}$", r"$10^{0}$", r"$10^{1}$", r"$10^{2}$", r"$10^{3}$"]
-    sdr_val_opt_it = np.max(sdr_val, axis=0)
-    plt.figure(2)
-    for index_isnr in range(n_isnr):
-        plt.subplot(1, n_isnr, index_isnr + 1)
-        for ia in range(n_algos):
-            plt.plot(sdr_val_opt_it[index_isnr, ia, :], linestylelist[ia])
-        if index_isnr == 0:
-            plt.ylabel('SDR (dB)', fontsize=16)
-        plt.xlabel('Consistency weight', fontsize=16)
-        plt.xticks(np.arange(0, n_cons, 1), cons_weight_str)
-        plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB', fontsize=16)
-        plt.grid('on')
-    plt.legend(params['algos_list'])
-    plt.show()
-    plt.tight_layout()
-
-    return
-
-
 if __name__ == '__main__':
 
     # Set random seed for reproducibility
@@ -201,6 +137,9 @@ if __name__ == '__main__':
     # Run the validation
     validation(params, out_dir)
     get_opt_val(params, out_dir)
-    plot_val(params, out_dir)
+    plot_val_results(params, out_dir)
+
+    # A function to specifically produce the results from the paper
+    #plot_val_figures_article(params, out_dir)
 
 # EOF
