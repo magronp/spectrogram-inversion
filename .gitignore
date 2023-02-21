@@ -2,6 +2,3 @@
 *.wav
 *.pth
 *.json
-data/
-!data/dummy.txt
-env/
