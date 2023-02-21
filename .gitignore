@@ -1,5 +1,5 @@
-*.pyc
 *.wav
 *.pth
 *.json
-*data/noise_ind.npz
+*.npz
+*.pkl

@@ -50,7 +50,7 @@ def prep_dataset(params):
 
     # Create the mixtures
     for n in range(params['n_mix']):
-        print('Creating mix ' + str(n+1) + ' / ' + str(params['n_mix']))
+        print('Creating mix ' + str(n + 1) + ' / ' + str(params['n_mix']))
 
         # Load the speech
         speech_data = speech_data_list[n]
@@ -59,7 +59,7 @@ def prep_dataset(params):
 
         # Take a piece of the noise of same length
         rand_sample_noise_beg = np.random.randint(noise_total_len)
-        noise = noise_total[rand_sample_noise_beg:rand_sample_noise_beg+len_clean]
+        noise = noise_total[rand_sample_noise_beg:rand_sample_noise_beg + len_clean]
 
         # Collect the noise index (to further study the results as a function of the noise type)
         noise_beg_ind.append(rand_sample_noise_beg)
@@ -86,18 +86,17 @@ def prep_dataset(params):
             record_src(rec_dir + '/', src_ref, params['sample_rate'], rec_mix=True)
 
     # Get the indices of noise type for each mixture in the test set and record
-    noise_beg_ind = np.array(noise_beg_ind)
-    noise_beg_ind = noise_beg_ind[50:]
-    ind_noise_1 = noise_beg_ind < noise_total_len // 3
-    ind_noise_3 = noise_beg_ind > 2*noise_total_len // 3
-    ind_noise_2 = 1 - (ind_noise_1+ind_noise_3)
-    np.savez('data/noise_ind.npz', ind_noise_1=ind_noise_1, ind_noise_2=ind_noise_2, ind_noise_3=ind_noise_3)
+    # noise_beg_ind = np.array(noise_beg_ind)
+    # noise_beg_ind = noise_beg_ind[50:]
+    # ind_noise_1 = noise_beg_ind < noise_total_len // 3
+    # ind_noise_3 = noise_beg_ind > 2*noise_total_len // 3
+    # ind_noise_2 = 1 - (ind_noise_1+ind_noise_3)
+    # np.savez('data/noise_ind.npz', ind_noise_1=ind_noise_1, ind_noise_2=ind_noise_2, ind_noise_3=ind_noise_3)
 
     return
 
 
 if __name__ == '__main__':
-
     # Set random seed for reproducibility
     np.random.seed(1234)
 

@@ -3,4 +3,3 @@ matplotlib==3.5.1
 numpy==1.21.5
 SoundFile==0.10.3.post1
 torch==1.12.1
-tqdm==4.64.0

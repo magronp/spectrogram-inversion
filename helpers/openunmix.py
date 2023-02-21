@@ -3,21 +3,22 @@
 __author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
 __docformat__ = 'reStructuredText'
 
-from torch.nn import LSTM, Linear, BatchNorm1d, Parameter
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 '''
-This script is taken from the original Open Unmix code,
+This script is largely adapted from the original Open Unmix code,
 which is available at: https://github.com/sigsep/open-unmix-pytorch
 If you use it, please acknowledge it by citing the corresponding paper:
-
 F.-R. Stoter, S. Uhlich, A. Liutkus and Y. Mitsufuji,
 "Open-Unmix - A Reference Implementation for Music Source Separation",
 Journal of Open Source Software, 2019.
-
 '''
+
+import numpy as np
+import json
+from pathlib import Path
+import torch
+from torch.nn import LSTM, Linear, BatchNorm1d, Parameter
+import torch.nn as nn
+from helpers.data_io import load_src
 
 
 class NoOp(nn.Module):
@@ -238,7 +239,7 @@ class OpenUnmix(nn.Module):
         x = self.fc2(x.reshape(-1, x.shape[-1]))
         x = self.bn2(x)
 
-        x = F.relu(x)
+        x = nn.functional.relu(x)
 
         # second dense stage + layer norm
         x = self.fc3(x)
@@ -252,6 +253,97 @@ class OpenUnmix(nn.Module):
         x += self.output_mean
 
         # since our output is non-negative, we can apply RELU
-        x = F.relu(x) * mix
+        x = nn.functional.relu(x) * mix
 
         return x
+
+
+def bandwidth_to_max_bin(rate, n_fft, bandwidth):
+    freqs = np.linspace(
+        0, float(rate) / 2, n_fft // 2 + 1,
+        endpoint=True
+    )
+    return np.max(np.where(freqs <= bandwidth)[0]) + 1
+
+
+def load_model(target, model_dir='data/open_unmx/', device='cpu'):
+
+    model_path = Path(model_dir).expanduser()
+
+    # load model from disk
+    with open(Path(model_path, target + '.json'), 'r') as stream:
+        results = json.load(stream)
+
+    target_model_path = next(Path(model_path).glob("%s*.pth" % target))
+    state = torch.load(
+        target_model_path,
+        map_location=device
+    )
+
+    max_bin = bandwidth_to_max_bin(
+        state['sample_rate'],
+        results['args']['nfft'],
+        results['args']['bandwidth']
+    )
+
+    unmix = OpenUnmix(
+        n_fft=results['args']['nfft'],
+        n_hop=results['args']['nhop'],
+        nb_channels=results['args']['nb_channels'],
+        hidden_size=results['args']['hidden_size'],
+        max_bin=max_bin
+    )
+
+    unmix.load_state_dict(state)
+    unmix.stft.center = True
+    unmix.eval()
+    unmix.to(device)
+
+    return unmix
+
+
+def estim_spectro_from_mix(audio, model_dir='data/open_unmx/', device='cpu'):
+
+    # Create a 2-channel audio for feeding open unmix
+    audio = np.repeat(audio, 2, axis=1)
+
+    # convert numpy audio to torch
+    audio_torch = torch.tensor(audio.T[None, ...]).float().to(device)
+
+    source_names = []
+    spectro_mag_est = []
+    targets = ['speech', 'noise']
+
+    print("Estimate spectrograms from the mix...")
+    for j, target in enumerate(targets):
+        unmix_target = load_model(
+            target=target,
+            model_dir=model_dir,
+            device=device
+        )
+        vj = unmix_target(audio_torch).cpu().detach().numpy()
+        # output is nb_frames, nb_samples, nb_channels, nb_bins
+        spectro_mag_est.append(vj[:, 0, ...])  # remove sample dim
+        source_names += [target]
+    print("Done")
+    spectro_mag_est = np.transpose(np.array(spectro_mag_est), (1, 3, 2, 0))
+
+    # Back to monochannel and remove extra 0 frames
+    spectro_mag_est = np.transpose(spectro_mag_est[:, :, 0, :], (2, 1, 0))
+
+    return spectro_mag_est
+
+
+if __name__ == '__main__':
+
+    # Load a mixture
+    sample_rate = 16000
+    audio_path = 'data/SNR_0/0/'
+    _, mix = load_src(audio_path, sample_rate)
+    audio = mix[:, np.newaxis]
+
+    # Estimate the magnitude spectrograms directly
+    model_dir = 'data/open_unmx/'
+    spectro_mag = estim_spectro_from_mix(audio, model_dir=model_dir)
+
+# EOF
