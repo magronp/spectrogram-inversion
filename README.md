@@ -1,6 +1,6 @@
 #  Spectrogram inversion algorithms for audio source separation
 
-This repository contains the code for reproducing the experiments in our paper entitled [Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints](https://arxiv.org/abs/2010.10255), submitted in a conference.
+This repository contains the code for reproducing the experiments in our paper entitled "Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints", submitted in a conference.
 
 ## Setup
 
@@ -40,8 +40,7 @@ Now that you're all set, you can run the following scripts:
 
 - `test_simple.py` runs all algorithms on a single noisy mixture and displays the SDR over iterations.
 
-- `validation.py` performs a grid search over the consistency weights on the validation subset to determine its optimal value for all algorithms. It also selects the optimal number of iterations for each algorithm.
-It also plots the validation results, also reproduce Fig. 1a-1d from the paper.
+- `validation.py` performs a grid search over the consistency weights on the validation subset. Then, it determines the optimal consistency weight and number of iterations for all algorithms. This script also plots the validation results, and reproduce Fig. 1 (a)-(d) from the paper.
 
 - `testing.py` runs the algorithms on the test subset and displays the results corresponding to Table. 2 in the paper.
 
