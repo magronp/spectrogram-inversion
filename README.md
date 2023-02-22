@@ -1,6 +1,6 @@
 #  Spectrogram inversion algorithms for audio source separation
 
-This repository contains the code for reproducing the experiments in our paper entitled [Spectrogram inversion for audio source separation via alternating projection algorithms](https://arxiv.org/abs/2010.10255), submitted at the European Signal Processing Conference (EUSIPCO) 2023.
+This repository contains the code for reproducing the experiments in our paper entitled [Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints](https://arxiv.org/abs/2010.10255), submitted in a conference.
 
 ## Setup
 
@@ -51,11 +51,10 @@ It also plots the validation results, also reproduce Fig. 1a-1d from the paper.
 If you use any of this code for your research, please cite our paper:
   
 ```latex
-@inproceedings{Magron2023eusipco,  
+@inproceedings{Magron2023specinv,  
   author={Magron, Paul and Virtanen, Tuomas},  
-  title={Spectrogram inversion for audio source separation via alternating projection algorithms},  
-  booktitle={Proc. European Signal Processing Conference (EUSIPCO)},  
-  year={2023},
-  month={September}
+  title={Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints},  
+  booktitle={submitted in a conference},  
+  year={2023}
 }
 ```
