@@ -36,7 +36,7 @@ nalgos = len(algos_list)
 sdr_all = np.zeros((max_iter+1, nalgos))
 
 for ia, algo in enumerate(algos_list):
-    _, _, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=1, max_iter=max_iter,
+    _, _, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=10, max_iter=max_iter,
                                       reference_sources=src_ref, win_length=win_length, hop_length=hop_length,
                                       window=win_type, compute_error=True)
     sdr_all[:, ia] = sdr

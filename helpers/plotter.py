@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 def plot_val_results(params, out_dir='outputs/'):
 
     val_sdr_path = out_dir + 'val_sdr.npz'
-    algos_list = params['algos_list']
 
     # Size Parameters
     n_isnr = len(params['input_SNR_list'])
@@ -40,7 +39,7 @@ def plot_val_results(params, out_dir='outputs/'):
             plt.subplot(n_algos, n_isnr, ia*n_isnr+index_isnr+1)
             plt.plot(sdr_val[:, index_isnr, ia, :])
             if index_isnr == 0:
-                plt.ylabel(algos_list[ia]),
+                plt.ylabel(params['algos_list'][ia]),
             if ia == 0:
                 plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB')
     plt.legend(params['cons_weight_list'])
@@ -63,7 +62,7 @@ def plot_val_results(params, out_dir='outputs/'):
         plt.title('iSNR= ' + str(params['input_SNR_list'][index_isnr]) + ' dB', fontsize=16)
         plt.grid('on')
         if index_isnr == 1:
-            plt.legend(algos_list, loc='center left')
+            plt.legend(params['algos_list'], loc='center left')
     plt.show()
     plt.tight_layout()
 
@@ -73,7 +72,6 @@ def plot_val_results(params, out_dir='outputs/'):
 def plot_val_figures_article(params, out_dir='outputs/'):
 
     val_sdr_path = out_dir + 'val_sdr.npz'
-    algos_list = params['algos_list']
 
     # Size Parameters
     n_isnr = len(params['input_SNR_list'])
@@ -90,12 +88,13 @@ def plot_val_figures_article(params, out_dir='outputs/'):
     cons_weight_str = [r"$0$", r"$10^{-3}$", r"$10^{-2}$", r"$10^{-1}$", r"$10^{0}$", r"$10^{1}$", r"$10^{2}$", r"$10^{3}$"]
     sdr_val_opt_it = np.max(sdr_val, axis=0)
     for index_isnr in range(n_isnr):
-        #plt.subplot(1, n_isnr, index_isnr + 1)
         plt.figure(figsize=(4, 3))
         for ia in range(n_algos):
             plt.plot(sdr_val_opt_it[index_isnr, ia, :], linestylelist[ia])
         if index_isnr == 0:
             plt.ylabel('SDR (dB)', fontsize=16)
+        if index_isnr == 1:
+             plt.legend(params['algos_list'], fontsize=14, loc='center left')
         plt.xlabel('Consistency weight', fontsize=16)
         plt.xticks(np.arange(0, n_cons, 1), cons_weight_str)
         plt.grid('on')
@@ -109,8 +108,7 @@ def plot_val_figures_article(params, out_dir='outputs/'):
     plt.plot(sdr_misi[:, index_isnr], 'k-')
     for ia in range(n_algos):
         plt.plot(sdr_val_opt_cons[:, index_isnr, ia], linestylelist[ia])
-    algos_list.insert(0, 'MISI')
-    plt.legend(algos_list, fontsize=14, loc='lower center')
+    plt.legend(['MISI'], fontsize=14, loc='lower left')
     plt.xlabel('Iterations', fontsize=16)
     plt.grid('on')
     plt.show()
