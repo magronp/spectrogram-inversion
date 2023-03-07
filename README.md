@@ -1,6 +1,6 @@
 #  Spectrogram inversion algorithms for audio source separation
 
-This repository contains the code for reproducing the experiments in our paper entitled "Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints", submitted in a conference.
+This repository contains the code for reproducing the experiments in our paper entitled [Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints](https://arxiv.org/abs/2303.01864), submitted in a conference.
 
 ## Setup
 
