@@ -4,3 +4,6 @@
 *.npz
 *.pkl
 *.pyc
+
+data/
+!.dummy.txt
