@@ -38,7 +38,7 @@ def validation(params, out_dir='outputs/'):
                             win_length=params['win_length'], window=params['win_type'])
 
             # Estimate the magnitude spectrograms
-            spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
+            spectro_mag = estim_spectro_from_mix(mix)
 
             # MISI
             _, error, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo='MISI', max_iter=params['max_iter'],

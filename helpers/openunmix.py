@@ -304,32 +304,31 @@ def load_model(target, model_dir='data/open_unmx/', device='cpu'):
 
 def estim_spectro_from_mix(audio, model_dir='data/open_unmx/', device='cpu'):
 
-    # Create a 2-channel audio for feeding open unmix
-    audio = np.repeat(audio, 2, axis=1)
+    # Add a dimension corresponding to the nb of channels (here=1)
+    audio = audio[:, np.newaxis]
 
     # convert numpy audio to torch
     audio_torch = torch.tensor(audio.T[None, ...]).float().to(device)
 
-    source_names = []
-    spectro_mag_est = []
-    targets = ['speech', 'noise']
-
     print("Estimate spectrograms from the mix...")
-    for j, target in enumerate(targets):
+    spectro_mag_est = []
+    for j, target in enumerate(['speech', 'noise']):
         unmix_target = load_model(
             target=target,
             model_dir=model_dir,
             device=device
         )
+        # output shape is (nb_frames, nb_samples (=1), nb_channels (=1), nb_bins)
         vj = unmix_target(audio_torch).cpu().detach().numpy()
-        # output is nb_frames, nb_samples, nb_channels, nb_bins
-        spectro_mag_est.append(vj[:, 0, ...])  # remove sample dim
-        source_names += [target]
+        # Remove useless dimensions and append
+        spectro_mag_est.append(np.squeeze(vj))
     print("Done")
-    spectro_mag_est = np.transpose(np.array(spectro_mag_est), (1, 3, 2, 0))
 
-    # Back to monochannel and remove extra 0 frames
-    spectro_mag_est = np.transpose(spectro_mag_est[:, :, 0, :], (2, 1, 0))
+    # Create a np tensor from the list (shape is (nb_targets, nb_frames, nb_bins) )
+    spectro_mag_est = np.array(spectro_mag_est)
+
+    # Transpose to shape (nb_targets, nb_bins, nb_frames)
+    spectro_mag_est = np.transpose(spectro_mag_est, (0, 2, 1))
 
     return spectro_mag_est
 
@@ -340,10 +339,9 @@ if __name__ == '__main__':
     sample_rate = 16000
     audio_path = 'data/SNR_0/0/'
     _, mix = load_src(audio_path, sample_rate)
-    audio = mix[:, np.newaxis]
 
     # Estimate the magnitude spectrograms directly
     model_dir = 'data/open_unmx/'
-    spectro_mag = estim_spectro_from_mix(audio, model_dir=model_dir)
+    spectro_mag = estim_spectro_from_mix(mix, model_dir=model_dir)
 
 # EOF

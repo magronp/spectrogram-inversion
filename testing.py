@@ -41,7 +41,7 @@ def testing(params, out_dir='outputs/'):
                                win_length=params['win_length'], window=params['win_type'])
 
             # Estimate the magnitude spectrograms
-            spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
+            spectro_mag = estim_spectro_from_mix(mix)
 
             # Amplitude mask
             src_est_am = amplitude_mask(spectro_mag, mix_stft, win_length=params['win_length'],

@@ -28,7 +28,7 @@ src_ref, mix = load_src(audio_path, sample_rate)
 mix_stft = stft(mix, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=win_type)
 
 # Estimate the magnitude spectrograms
-spectro_mag = estim_spectro_from_mix(mix[:, np.newaxis])
+spectro_mag = estim_spectro_from_mix(mix)
 
 # Apply the spectrogram inversion algorithms
 algos_list = ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
