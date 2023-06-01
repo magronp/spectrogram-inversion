@@ -2,7 +2,7 @@
 
 This repository contains the code for reproducing the experiments in our paper entitled [Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints](https://arxiv.org/abs/2303.01864), published at EUSIPCO 2023.
 
-We also provide some sounds in the `examples` folder, with the original clean speech and noise signals along with their mixture (SNR = -10 dB), as well as enhanced speech signals using various spectrogram inversion algorithms.
+We also provide some sounds in the `examples` folder: it contains a clean speech and a noise signals along with their mixture (SNR = -10 dB), as well as enhanced speech signals using various spectrogram inversion algorithms. Note that all algorithms produce perceptually similar results, although one can here slightly less distortion in the voice when using Mix+Incons.
 
 
 ## Setup
