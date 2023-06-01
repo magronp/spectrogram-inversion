@@ -131,15 +131,15 @@ if __name__ == '__main__':
               'n_mix': 50,
               'input_SNR_list': [10, 0, -10],
               'cons_weight_list': np.insert(np.logspace(-3, 3, 7), 0, 0),
-              'algos_list': ['Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix'],
+              'algos_list': ['Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
               }
 
     # Run the validation
-    validation(params, out_dir)
-    get_opt_val(params, out_dir)
-    plot_val_results(params, out_dir)
+    #validation(params, out_dir)
+    #get_opt_val(params, out_dir)
+    #plot_val_results(params, out_dir)
 
     # A function to specifically produce the results from the paper
-    #plot_val_figures_article(params, out_dir)
+    plot_val_figures_article(params, out_dir)
 
 # EOF

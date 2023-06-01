@@ -1,9 +1,8 @@
-*.wav
 *.pth
 *.json
 *.npz
 *.pkl
 *.pyc
 
-data/
-!.dummy.txt
+data/*
+!data/.dummy.txt

@@ -4,11 +4,12 @@ __author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
 __docformat__ = 'reStructuredText'
 
 import numpy as np
-from helpers.algos import spectrogram_inversion
+from helpers.algos import spectrogram_inversion, amplitude_mask, get_score
 from helpers.data_io import load_src
 from librosa import stft
 from helpers.openunmix import estim_spectro_from_mix
 from matplotlib import pyplot as plt
+import soundfile
 
 
 # Set random seed for reproducibility
@@ -23,32 +24,34 @@ win_type = 'hann'
 max_iter = 20
 
 # Load data (start from mixture 50 since the first 50 are for validation)
-audio_path = 'data/SNR_0/0/'
+audio_path = 'example/'
 src_ref, mix = load_src(audio_path, sample_rate)
 mix_stft = stft(mix, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=win_type)
+
+# Record the mix
+soundfile.write(audio_path + 'mix.wav', np.sum(src_ref, axis=0), sample_rate)
 
 # Estimate the magnitude spectrograms
 spectro_mag = estim_spectro_from_mix(mix)
 
 # Apply the spectrogram inversion algorithms
-algos_list = ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix']
+algos_list = ['MISI', 'Mix+Incons', 'Mix+Incons_hardMag', 'Mag+Incons_hardMix', 'Incons_hardMix']
 nalgos = len(algos_list)
 sdr_all = np.zeros((max_iter+1, nalgos))
 
-for ia, algo in enumerate(algos_list):
-    _, _, sdr = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=10, max_iter=max_iter,
-                                      reference_sources=src_ref, win_length=win_length, hop_length=hop_length,
-                                      window=win_type, compute_error=True)
-    sdr_all[:, ia] = sdr
+# Non-iterative methods (AM and Incons_hardMix)
 
-plt.figure()
-plt.plot(sdr_all)
-plt.ylabel('SDR (dB)', fontsize=16)
-plt.xlabel('Iterations', fontsize=16)
-plt.legend(algos_list)
-plt.grid('on')
-plt.show()
-plt.tight_layout()
+# Amplitude mask
+src_est = amplitude_mask(spectro_mag, mix_stft, win_length, hop_length, win_type)
+soundfile.write(audio_path + 'clean_' + 'AM' + '.wav', src_est[0, :], sample_rate)
+
+
+# Iterative algorithms
+for ia, algo in enumerate(algos_list):
+    src_est = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=10, max_iter=max_iter,
+                                    reference_sources=src_ref, win_length=win_length, hop_length=hop_length,
+                                    window=win_type, compute_error=True)[0]
+    soundfile.write(audio_path + 'clean_' + algo + '.wav', src_est[0, :], sample_rate)
 
 # EOF
 
