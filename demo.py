@@ -6,6 +6,7 @@ __docformat__ = 'reStructuredText'
 import numpy as np
 from helpers.algos import spectrogram_inversion, amplitude_mask, get_score
 from helpers.data_io import load_src
+import librosa
 from librosa import stft
 from helpers.openunmix import estim_spectro_from_mix
 from matplotlib import pyplot as plt
@@ -23,13 +24,10 @@ hop_length = 256
 win_type = 'hann'
 max_iter = 20
 
-# Load data (start from mixture 50 since the first 50 are for validation)
+# Load the noisy mixture
 audio_path = 'example/'
-src_ref, mix = load_src(audio_path, sample_rate)
+mix = librosa.core.load(audio_path + 'mix.wav', sr=sample_rate)[0]
 mix_stft = stft(mix, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=win_type)
-
-# Record the mix
-soundfile.write(audio_path + 'mix.wav', np.sum(src_ref, axis=0), sample_rate)
 
 # Estimate the magnitude spectrograms
 spectro_mag = estim_spectro_from_mix(mix)
@@ -43,15 +41,15 @@ sdr_all = np.zeros((max_iter+1, nalgos))
 
 # Amplitude mask
 src_est = amplitude_mask(spectro_mag, mix_stft, win_length, hop_length, win_type)
-soundfile.write(audio_path + 'clean_' + 'AM' + '.wav', src_est[0, :], sample_rate)
+soundfile.write(audio_path + 'speech_est_' + 'AM' + '.wav', src_est[0, :], sample_rate)
 
 
 # Iterative algorithms
 for ia, algo in enumerate(algos_list):
     src_est = spectrogram_inversion(mix_stft, spectro_mag, algo=algo, consistency_weigth=10, max_iter=max_iter,
-                                    reference_sources=src_ref, win_length=win_length, hop_length=hop_length,
+                                    reference_sources=None, win_length=win_length, hop_length=hop_length,
                                     window=win_type, compute_error=True)[0]
-    soundfile.write(audio_path + 'clean_' + algo + '.wav', src_est[0, :], sample_rate)
+    soundfile.write(audio_path + 'speech_est_' + algo + '.wav', src_est[0, :], sample_rate)
 
 # EOF
 

@@ -2,7 +2,8 @@
 
 This repository contains the code for reproducing the experiments in our paper entitled [Spectrogram Inversion for Audio Source Separation via Consistency, Mixing, and Magnitude Constraints](https://arxiv.org/abs/2303.01864), published at EUSIPCO 2023.
 
-We also provide some [sound examples](#sound-examples).
+We also provide some sounds in the `examples` folder, with the original clean speech and noise signals along with their mixture (SNR = -10 dB), as well as enhanced speech signals using various spectrogram inversion algorithms.
+
 
 ## Setup
 
@@ -40,31 +41,14 @@ Note that you don't need to install the [Open Unmix](https://github.com/sigsep/o
 
 Now that you're all set, you can run the following scripts:
 
-- `test_simple.py` runs all algorithms on a single noisy mixture and displays the SDR over iterations.
-
 - `validation.py` performs a grid search over the consistency weights on the validation subset. Then, it determines the optimal consistency weight and number of iterations for all algorithms. This script also plots the validation results, and reproduces Fig. 1 (a)-(d) from the paper.
 
 - `testing.py` runs the algorithms on the test subset and displays the results corresponding to Table. 2 in the paper.
 
+## Running a simple demo
 
-## Sound examples
+You can try the algorithms using your own sound file. To that end, just place the corresponding noisy mixture `mix.wav` in the `example` folder (or change the `audio_path` parameter accordingly), and run the `demo.py` script.
 
-Clean speech  AM <audio src="example/clean.wav" controls preload></audio>
-
-Noisy mix (-10 dB) AM <audio src="example/mix.wav" controls preload></audio>
-
-The estimated speech signals are below. Note that the difference is quite subtle, although one can hear slightly less voice distortion with Mix+Incons.
-
-https://github.com/magronp/spectrogram-inversion/blob/main/example/clean.mp4
-
-|     |  |
-| -------- | ------- |
-| AM  | <audio src="example/clean_AM.wav" controls preload></audio>   |
-| MISI | <audio src="example/clean_MISI.wav" controls preload></audio>   |
-| Mix+Incons    | <audio src="example/clean_Mix+Incons.wav" controls preload></audio>   |
-| Incons_hardMix    | <audio src="example/clean_Incons_hardMix.wav" controls preload></audio>   |
-| Mix+Incons_hardMag    | <audio src="example/clean_Mix+Incons_hardMag.wav" controls preload></audio>   |
-| Mag+Incons_hardMix    | <audio src="example/clean_Mag+Incons_hardMix.wav" controls preload></audio>   |
 
 
 ## Reference
