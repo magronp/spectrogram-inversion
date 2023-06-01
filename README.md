@@ -55,6 +55,8 @@ Noisy mix (-10 dB) AM <audio src="example/mix.wav" controls preload></audio>
 
 The estimated speech signals are below. Note that the difference is quite subtle, although one can hear slightly less voice distortion with Mix+Incons.
 
+https://github.com/magronp/spectrogram-inversion/blob/main/example/clean.wav?raw=true
+
 |     |  |
 | -------- | ------- |
 | AM  | <audio src="example/clean_AM.wav" controls preload></audio>   |
