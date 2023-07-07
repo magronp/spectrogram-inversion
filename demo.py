@@ -4,12 +4,10 @@ __author__ = 'Paul Magron -- INRIA Nancy - Grand Est, France'
 __docformat__ = 'reStructuredText'
 
 import numpy as np
-from helpers.algos import spectrogram_inversion, amplitude_mask, get_score
-from helpers.data_io import load_src
+from helpers.algos import spectrogram_inversion, amplitude_mask
 import librosa
 from librosa import stft
 from helpers.openunmix import estim_spectro_from_mix
-from matplotlib import pyplot as plt
 import soundfile
 
 

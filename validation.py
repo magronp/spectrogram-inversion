@@ -135,9 +135,9 @@ if __name__ == '__main__':
               }
 
     # Run the validation
-    #validation(params, out_dir)
-    #get_opt_val(params, out_dir)
-    #plot_val_results(params, out_dir)
+    validation(params, out_dir)
+    get_opt_val(params, out_dir)
+    plot_val_results(params, out_dir)
 
     # A function to specifically produce the results from the paper
     plot_val_figures_article(params, out_dir)

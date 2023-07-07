@@ -120,7 +120,7 @@ def plot_val_figures_article(params, out_dir='outputs/'):
     plt.show()
 
     leg = fig.legend(loc="lower left", ncol=4)
-    export_legend(leg)
+    export_legend(leg, filename='legend.eps')
 
     return
 
